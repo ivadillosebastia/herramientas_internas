@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculador de Jornada Laboral</title>
+  <meta name="description"
+    content="Calcula tu jornada de trabajo restante y hora de salida a partir de tus registros de entrada y salida." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="calc.css" />
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚖</span>
+        <span class="logo-text">Jornada<strong>Laboral</strong></span>
+      </div>
+      <p class="header-tagline">Calculador de horas de trabajo</p>
+    </div>
+    <div class="header-shape"></div>
+  </header>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="card">
+
+      <!-- Configuración de jornada -->
+      <section class="section-block">
+        <h2 class="section-title">Configuración de jornada</h2>
+        <div class="jornada-config">
+          <div class="config-field">
+            <label for="jornada-horas">Horas</label>
+            <input type="number" id="jornada-horas" value="8" min="0" max="23" step="1" />
+          </div>
+          <div class="config-sep">:</div>
+          <div class="config-field">
+            <label for="jornada-minutos">Minutos</label>
+            <input type="number" id="jornada-minutos" value="15" min="0" max="59" step="5" />
+          </div>
+          <div class="config-desc">
+            <span class="config-label">Jornada total</span>
+            <span class="config-preview" id="config-preview">8h 15m</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Importar fichajes -->
+      <section class="section-block kairos-block">
+        <h2 class="section-title">Importar fichajes de KairosHR</h2>
+        <div class="kairos-form">
+          <div class="kairos-field">
+            <label for="kairos-dni" id="kairos-dni-label">NIF / DNI del empleado</label>
+            <input type="text" id="kairos-dni" placeholder="Ej. 12345678Z" maxlength="9" autocomplete="off" />
+          </div>
+          <div class="kairos-field">
+            <label for="kairos-code">Código de acceso</label>
+            <input type="password" id="kairos-code" placeholder="••••" maxlength="4" autocomplete="current-password"
+              pattern="[0-9]*" inputmode="numeric" />
+          </div>
+          <button class="btn-kairos" id="btn-kairos">
+            <span class="btn-kairos-icon">⬇</span>
+            Cargar fichajes
+          </button>
+        </div>
+        <p class="kairos-status" id="kairos-status"></p>
+      </section>
+
+      <!-- Registros -->
+      <section class="section-block">
+        <h2 class="section-title">Registros del día</h2>
+        <div class="col-header">
+          <span></span>
+          <span>Entrada</span>
+          <span>Salida</span>
+          <span></span>
+        </div>
+        <div class="registros" id="registros">
+          <!-- Filas generadas por JS -->
+        </div>
+        <button class="btn-add" id="btn-add">
+          <span>+</span> Añadir tramo
+        </button>
+      </section>
+
+      <!-- Botón calcular -->
+      <button class="btn-calc" id="btn-calc">
+        <span class="btn-calc-icon">▶</span>
+        Calcular jornada
+      </button>
+
+      <p class="error" id="error-msg"></p>
+
+      <!-- Resultado -->
+      <div class="resultado" id="resultado" hidden>
+        <div class="resultado-main">
+          <div class="resultado-info">
+            <div class="resultado-item">
+              <div class="resultado-icon">🕐</div>
+              <div class="resultado-data">
+                <span class="res-label">Tiempo trabajado</span>
+                <span class="res-valor" id="res-trabajado">—</span>
+              </div>
+            </div>
+            <div class="resultado-item">
+              <div class="resultado-icon">⏳</div>
+              <div class="resultado-data">
+                <span class="res-label">Jornada restante</span>
+                <span class="res-valor" id="res-restante">—</span>
+              </div>
+            </div>
+            <div class="resultado-item highlight">
+              <div class="resultado-icon">🚪</div>
+              <div class="resultado-data">
+                <span class="res-label">Hora de salida</span>
+                <span class="res-valor grande" id="res-salida">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="resultado-progress">
+            <svg class="progress-ring" width="120" height="120">
+              <circle class="progress-ring__background" stroke="rgba(8,15,30,0.06)" stroke-width="8" fill="transparent" r="48" cx="60" cy="60"/>
+              <circle class="progress-ring__circle" stroke="yellowgreen" stroke-width="8" fill="transparent" r="48" cx="60" cy="60"
+                      stroke-dasharray="301.6" stroke-dashoffset="301.6" />
+            </svg>
+            <div class="progress-icon" id="progress-icon">🕐</div>
+          </div>
+        </div>
+        <div class="resultado-banner" id="resultado-banner" style="display: none;"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>Calculador de Jornada Laboral &mdash; Uso interno</p>
+  </footer>
+
+  <script src="kairos.service.js"></script>
+  <script src="calc.js" defer></script>
+</body>
+
+</html>
