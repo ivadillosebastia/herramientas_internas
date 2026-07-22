@@ -396,4 +396,267 @@ function cargarDniGuardado() {
 
 document.addEventListener('DOMContentLoaded', () => {
   cargarDniGuardado();
+  initAusenciasModule();
 });
+
+// ── Módulo de Ausencias y Presencia ──────────────────────────────────────────
+let ausenciasState = {
+  employees: [],
+  filter: 'all',
+  search: '',
+  loaded: false
+};
+
+function getFormattedToday() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatFechaVuelta(dateStr) {
+  if (!dateStr) return '—';
+  const parts = dateStr.trim().split(' ');
+  const datePart = parts[0]; // "YYYY-MM-DD"
+  const timePart = parts[1]; // "HH:MM" si existe
+
+  const [y, m, d] = datePart.split('-');
+  if (!y || !m || !d) return dateStr;
+
+  const formattedDate = `${d}/${m}/${y}`;
+  return timePart ? `${formattedDate} ${timePart.slice(0, 5)}` : formattedDate;
+}
+
+function initAusenciasModule() {
+  const btnRefresh = document.getElementById('btn-refresh-ausencias');
+  const searchInput = document.getElementById('ausencias-search');
+  const chips = document.querySelectorAll('.ausencias-filter-chips .chip');
+
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', () => cargarListadoAusencias());
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      ausenciasState.search = e.target.value;
+      renderListadoAusencias();
+    });
+  }
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      ausenciasState.filter = chip.dataset.filter || 'all';
+      renderListadoAusencias();
+    });
+  });
+}
+
+async function cargarListadoAusencias() {
+  const container = document.getElementById('ausencias-container');
+  const btnRefresh = document.getElementById('btn-refresh-ausencias');
+  if (!container) return;
+
+  if (btnRefresh) {
+    btnRefresh.disabled = true;
+    btnRefresh.classList.add('loading');
+  }
+
+  container.innerHTML = `
+    <div class="ausencias-loading">
+      <div class="spinner"></div>
+      <span>Cargando plantilla y fichajes de KairosHR...</span>
+    </div>
+  `;
+
+  try {
+    const today = getFormattedToday();
+
+    // 1. Obtener datos simultáneos de los 3 endpoints
+    const [employeesRaw, absencesRaw, checkinsRaw] = await Promise.all([
+      KairosService.getEmployees(),
+      KairosService.getAbsences({ date_start: today, date_end: today }),
+      KairosService.getCheckins({ date_start: today, date_end: today })
+    ]);
+
+    // 2. Filtrar únicamente empleados activos
+    const activeEmployees = employeesRaw.filter(emp => emp.active === true || emp.active === 'true');
+
+    // 3. Cruzar datos por NIF
+    ausenciasState.employees = activeEmployees.map(emp => {
+      const name = `${emp.name || ''} ${emp.lastname || emp.last_name || ''}`.trim();
+      const empNif = (emp.nif || '').trim().toUpperCase();
+
+      // Buscar ausencia registrada para hoy
+      const absence = absencesRaw.find(abs => {
+        const absNif = (abs.nif || '').trim().toUpperCase();
+        return absNif === empNif;
+      });
+
+      // Buscar fichajes para hoy
+      const empCheckins = checkinsRaw.filter(chk => {
+        const chkNif = (chk.nif || '').trim().toUpperCase();
+        return chkNif === empNif;
+      });
+
+      // Ordenar fichajes cronológicamente
+      empCheckins.sort((a, b) => {
+        const ta = `${a.date || ''}T${a.time || ''}`;
+        const tb = `${b.date || ''}T${b.time || ''}`;
+        return ta.localeCompare(tb);
+      });
+
+      const lastCheckin = empCheckins.length > 0 ? empCheckins[empCheckins.length - 1] : null;
+
+      // Evaluar si está trabajando:
+      // 1) El último fichaje es de entrada (entry).
+      // 2) O el último fichaje es de salida pero de tipo 'break', 'breakfast' o 'lunch'.
+      let isWorking = false;
+      let workingMode = 'presencial';
+
+      if (lastCheckin) {
+        const action = (lastCheckin.action || '').toLowerCase();
+        const type = (lastCheckin.type || '').toLowerCase();
+
+        const isEntry = action === 'entry' || action.includes('in') || action.includes('entrada');
+        const isBreakExit = (action === 'exit' || action.includes('out') || action.includes('salida')) &&
+                            (type.includes('break') || type.includes('breakfast') || type.includes('lunch'));
+
+        if (isEntry || isBreakExit) {
+          isWorking = true;
+
+          // Determinar la modalidad (si en algún fichaje del día se registró teletrabajo)
+          const hasTelework = empCheckins.some(c => (c.type || '').toLowerCase().includes('tele'));
+          workingMode = hasTelework ? 'teletrabajo' : 'presencial';
+        }
+      }
+
+      // Asignar estado, clase de badge, texto y fecha de vuelta
+      let estado = 'ausente';
+      let badgeClass = '';
+      let badgeText = '';
+      let fechaVuelta = '—';
+
+      if (isWorking) {
+        estado = 'trabajando';
+        if (workingMode === 'teletrabajo') {
+          badgeClass = 'badge-working-tele';
+          badgeText = '💻 Trabajando (Teletrabajo)';
+        } else {
+          badgeClass = 'badge-working-office';
+          badgeText = '🏢 Trabajando (Presencial)';
+        }
+      } else if (absence) {
+        estado = 'ausente';
+        const type = (absence.type || '').toUpperCase();
+
+        if (type === 'H') {
+          badgeClass = 'badge-absent-vacaciones';
+          badgeText = '🏖️ Vacaciones';
+          fechaVuelta = formatFechaVuelta(absence.date_end);
+        } else {
+          // Bajas y resto de ausencias: mostrar simplemente "Ausente" sin indicar tipo específico ni fecha fin
+          badgeClass = 'badge-absent-permiso';
+          badgeText = '📋 Ausente';
+          fechaVuelta = '—';
+        }
+      } else {
+        // Ni fichado entrada ni ausencia registrada en sistema
+        estado = 'ausente';
+        badgeClass = 'badge-absent-sinfichar';
+        badgeText = '⚪ Ausente';
+      }
+
+      return {
+        name,
+        nif: empNif,
+        estado,
+        isWorking,
+        badgeClass,
+        badgeText,
+        fechaVuelta
+      };
+    });
+
+    // Ordenar alfabéticamente por nombre
+    ausenciasState.employees.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+    ausenciasState.loaded = true;
+
+    renderListadoAusencias();
+  } catch (err) {
+    console.error('[Ausencias]', err);
+    container.innerHTML = `
+      <div class="ausencias-error">
+        <span>⚠️ Error al cargar el listado: ${err.message || 'Error de conexión'}.</span>
+        <button class="btn-refresh" onclick="cargarListadoAusencias()">Reintentar</button>
+      </div>
+    `;
+  } finally {
+    if (btnRefresh) {
+      btnRefresh.disabled = false;
+      btnRefresh.classList.remove('loading');
+    }
+  }
+}
+
+function renderListadoAusencias() {
+  const container = document.getElementById('ausencias-container');
+  if (!container) return;
+
+  const { employees, filter, search, loaded } = ausenciasState;
+
+  if (!loaded) {
+    container.innerHTML = `
+      <div class="ausencias-empty">
+        <span>Haz clic en <strong>"Obtener datos"</strong> para consultar el estado actual de la plantilla.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const query = search.trim().toLowerCase();
+  const filtered = employees.filter(emp => {
+    if (query && !emp.name.toLowerCase().includes(query)) {
+      return false;
+    }
+    if (filter === 'working' && emp.estado !== 'trabajando') return false;
+    if (filter === 'absent' && emp.estado !== 'ausente') return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="ausencias-empty">
+        <span>No se encontraron empleados para los criterios seleccionados.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const rowsHtml = filtered.map(emp => `
+    <tr>
+      <td class="emp-name-cell">${emp.name}</td>
+      <td><span class="badge ${emp.badgeClass}">${emp.badgeText}</span></td>
+      <td>${emp.fechaVuelta !== '—' ? `<span class="vuelta-date">📅 ${emp.fechaVuelta}</span>` : '<span class="vuelta-none">—</span>'}</td>
+    </tr>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="emp-table-wrapper">
+      <table class="emp-table">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Estado / Modalidad</th>
+            <th>Fecha de vuelta</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+}

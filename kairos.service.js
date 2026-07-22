@@ -210,6 +210,82 @@ const KairosService = (() => {
     _authToken = null;
   }
 
+  // ── Obtener lista de empleados ─────────────────────────────────────────────
+  /**
+   * Obtiene la lista completa de empleados de la empresa.
+   * Realiza login automáticamente si no hay token activo.
+   *
+   * @returns {Promise<object[]>} Array de empleados
+   */
+  async function getEmployees() {
+    if (!_authToken) await login();
+
+    const res = await fetch(`${BASE_URL}/employees`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${_authToken}` },
+    });
+
+    if (res.status === 401) {
+      _authToken = null;
+      await login();
+      return getEmployees();
+    }
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '');
+      throw new Error(`Error al obtener empleados (${res.status})${msg ? ': ' + msg : ''}.`);
+    }
+
+    const json = await res.json();
+
+    if (json.status !== 'OK') {
+      throw new Error(`La API rechazó la petición de empleados: ${json.message ?? json.code ?? 'error desconocido'}.`);
+    }
+
+    return json.data?.records ?? [];
+  }
+
+  // ── Obtener ausencias de empleados ─────────────────────────────────────────
+  /**
+   * Obtiene el listado de ausencias en un rango de fechas (por defecto día de hoy).
+   *
+   * @param {object} [opts]
+   * @param {string} [opts.date_start] - Fecha inicio YYYY-MM-DD
+   * @param {string} [opts.date_end]   - Fecha fin YYYY-MM-DD
+   * @returns {Promise<object[]>} Array de registros de ausencias
+   */
+  async function getAbsences({ date_start, date_end } = {}) {
+    if (!_authToken) await login();
+
+    const params = new URLSearchParams();
+    if (date_start) params.set('date_start', date_start);
+    if (date_end) params.set('date_end', date_end);
+
+    const res = await fetch(`${BASE_URL}/employees/absences?${params}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${_authToken}` },
+    });
+
+    if (res.status === 401) {
+      _authToken = null;
+      await login();
+      return getAbsences({ date_start, date_end });
+    }
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '');
+      throw new Error(`Error al obtener ausencias (${res.status})${msg ? ': ' + msg : ''}.`);
+    }
+
+    const json = await res.json();
+
+    if (json.status !== 'OK') {
+      throw new Error(`La API rechazó la petición de ausencias: ${json.message ?? json.code ?? 'error desconocido'}.`);
+    }
+
+    return json.data?.records ?? [];
+  }
+
   // ── API pública ───────────────────────────────────────────────────────────
-  return { login, getCheckins, getSchedule, parsearFichajes, logout };
+  return { login, getCheckins, getSchedule, getEmployees, getAbsences, parsearFichajes, logout };
 })();

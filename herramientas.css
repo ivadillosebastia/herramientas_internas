@@ -740,6 +740,278 @@ body {
   color: #f87171;  /* rojo suave */
 }
 
+/* ── Módulo de Ausencias y Presencia ─────────────────────────────────────── */
+.section-header-flex {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-mid);
+  margin-top: 2px;
+}
+
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--navy-100);
+  border-radius: var(--radius-sm);
+  background: var(--navy-800);
+  color: var(--gold-300);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--navy-700);
+  color: #fff;
+  border-color: var(--gold-400);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.btn-refresh.loading .refresh-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Toolbar: Buscador + Chips */
+.ausencias-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ausencias-search {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid rgba(8, 15, 30, 0.15);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.82rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ausencias-search:focus {
+  border-color: var(--gold-500);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+}
+
+.ausencias-filter-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.chip {
+  padding: 6px 12px;
+  border: 1px solid rgba(8, 15, 30, 0.12);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--text-mid);
+  font-family: 'Lexend', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  background: var(--cream-d);
+  color: var(--navy-800);
+}
+
+.chip.active {
+  background: var(--navy-800);
+  color: var(--gold-300);
+  border-color: var(--navy-800);
+  font-weight: 600;
+}
+
+/* Tabla de empleados */
+.ausencias-container {
+  min-height: 120px;
+}
+
+.emp-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(8, 15, 30, 0.1);
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.emp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.emp-table th {
+  background: var(--navy-800);
+  color: var(--navy-100);
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+}
+
+.emp-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(8, 15, 30, 0.06);
+  color: var(--text-dark);
+}
+
+.emp-table tr:last-child td {
+  border-bottom: none;
+}
+
+.emp-table tr:hover td {
+  background: rgba(245, 240, 232, 0.5);
+}
+
+.emp-name-cell {
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
+/* Badges / Pastillas de Estado */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-working-office {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-working-tele {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-absent-vacaciones {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-absent-permiso {
+  background: rgba(139, 92, 246, 0.12);
+  color: #6d28d9;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-absent-baja {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-absent-festivo {
+  background: rgba(236, 72, 153, 0.12);
+  color: #be185d;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.badge-absent-sinfichar {
+  background: rgba(107, 114, 128, 0.12);
+  color: #4b5563;
+  border: 1px solid rgba(107, 114, 128, 0.25);
+}
+
+.vuelta-date {
+  font-weight: 500;
+  color: var(--navy-700);
+}
+
+.vuelta-none {
+  color: var(--text-light);
+}
+
+/* Loading & Empty states */
+.ausencias-loading,
+.ausencias-empty,
+.ausencias-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px;
+  gap: 12px;
+  color: var(--text-mid);
+  font-size: 0.85rem;
+  text-align: center;
+  background: #fff;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(8, 15, 30, 0.15);
+}
+
+.ausencias-error {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.3);
+  background: #fef2f2;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(201, 168, 76, 0.2);
+  border-top-color: var(--gold-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .card { padding: 24px 20px; }
@@ -752,4 +1024,7 @@ body {
   .btn-kairos { width: 100%; justify-content: center; }
   .resultado-main { flex-direction: column-reverse; }
   .resultado-progress { border-left: none; border-bottom: 1px solid var(--cream-d); padding: 20px; min-width: auto; }
+  .ausencias-toolbar { flex-direction: column; align-items: stretch; }
+  .ausencias-filter-chips { justify-content: space-between; }
+  .chip { flex: 1; text-align: center; }
 }

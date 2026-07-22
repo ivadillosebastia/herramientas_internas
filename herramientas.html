@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="calc.css" />
+  <link rel="stylesheet" href="herramientas.css" />
 </head>
 
 <body>
@@ -125,15 +125,51 @@
           </div>
           <div class="resultado-progress">
             <svg class="progress-ring" width="120" height="120">
-              <circle class="progress-ring__background" stroke="rgba(8,15,30,0.06)" stroke-width="8" fill="transparent" r="48" cx="60" cy="60"/>
-              <circle class="progress-ring__circle" stroke="yellowgreen" stroke-width="8" fill="transparent" r="48" cx="60" cy="60"
-                      stroke-dasharray="301.6" stroke-dashoffset="301.6" />
+              <circle class="progress-ring__background" stroke="rgba(8,15,30,0.06)" stroke-width="8" fill="transparent"
+                r="48" cx="60" cy="60" />
+              <circle class="progress-ring__circle" stroke="yellowgreen" stroke-width="8" fill="transparent" r="48"
+                cx="60" cy="60" stroke-dasharray="301.6" stroke-dashoffset="301.6" />
             </svg>
             <div class="progress-icon" id="progress-icon">🕐</div>
           </div>
         </div>
         <div class="resultado-banner" id="resultado-banner" style="display: none;"></div>
       </div>
+
+    </div>
+
+    <div class="card">
+
+      <!-- listado de ausencias -->
+      <section class="section-block">
+        <div class="section-header-flex">
+          <div>
+            <h2 class="section-title">Listado de ausentes y trabajadores</h2>
+            <p class="section-subtitle">Estado actual de la plantilla en el día de hoy</p>
+          </div>
+          <button class="btn-refresh" id="btn-refresh-ausencias" title="Obtener datos de plantilla">
+            <span class="refresh-icon">🔄</span> Obtener datos
+          </button>
+        </div>
+
+        <div class="ausencias-toolbar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="ausencias-search" class="ausencias-search" placeholder="Buscar por nombre..." />
+          </div>
+          <div class="ausencias-filter-chips">
+            <button class="chip active" data-filter="all">Todos</button>
+            <button class="chip" data-filter="working">Trabajando</button>
+            <button class="chip" data-filter="absent">Ausentes</button>
+          </div>
+        </div>
+
+        <div id="ausencias-container" class="ausencias-container">
+          <div class="ausencias-empty">
+            <span>Haz clic en <strong>"Obtener datos"</strong> para consultar el estado actual de la plantilla.</span>
+          </div>
+        </div>
+      </section>
 
     </div>
   </main>
@@ -144,7 +180,7 @@
   </footer>
 
   <script src="kairos.service.js"></script>
-  <script src="calc.js" defer></script>
+  <script src="herramientas.js" defer></script>
 </body>
 
 </html>

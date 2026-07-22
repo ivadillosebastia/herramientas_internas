@@ -3,20 +3,20 @@
 //  Uso:  node proxy.js
 //  URL:  http://<IP-del-servidor>:3001
 //
-//  • Sirve los ficheros estáticos (calc.html, calc.css, calc.js, kairos.service.js)
+//  • Sirve los ficheros estáticos (herramientas.html, herramientas.css, herramientas.js, kairos.service.js)
 //    desde la misma carpeta donde está este script.
 //  • Reenvía las rutas /login y /checkin/* a la API de KairosHR (sin CORS).
 //  • No requiere npm install — solo módulos nativos de Node.js.
 
 const http = require('http');
 const https = require('https');
-const fs   = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 // ── Configuración ─────────────────────────────────────────────────────────────
-const PORT    = 3001;
+const PORT = 3001;
 const API_URL = 'https://portal.kairoshr.es/api-service/v1';
-const API     = new (require('url').URL)(API_URL);
+const API = new (require('url').URL)(API_URL);
 
 // Rutas que se reenvían a la API de KairosHR
 const API_PREFIXES = ['/login', '/checkin', '/employees'];
@@ -24,10 +24,10 @@ const API_PREFIXES = ['/login', '/checkin', '/employees'];
 // Tipos MIME para los ficheros estáticos
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.css':  'text/css; charset=utf-8',
-  '.js':   'application/javascript; charset=utf-8',
-  '.ico':  'image/x-icon',
-  '.png':  'image/png',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.ico': 'image/x-icon',
+  '.png': 'image/png',
 };
 
 // ── Servidor ──────────────────────────────────────────────────────────────────
@@ -100,10 +100,10 @@ const server = http.createServer((req, res) => {
 
     const options = {
       hostname: API.hostname,
-      port:     443,
-      path:     API.pathname + req.url,   // incluye query string
-      method:   req.method,
-      headers:  { ...req.headers, host: API.hostname },
+      port: 443,
+      path: API.pathname + req.url,   // incluye query string
+      method: req.method,
+      headers: { ...req.headers, host: API.hostname },
     };
     delete options.headers['origin'];
     delete options.headers['referer'];
@@ -127,11 +127,11 @@ const server = http.createServer((req, res) => {
   }
 
   // ── 2. Resto → servir fichero estático ──────────────────────────────────
-  // / → index = calc.html
-  let filePath = reqPath === '/' ? '/calc.html' : reqPath;
+  // / → index = herramientas.html
+  let filePath = reqPath === '/' ? '/herramientas.html' : reqPath;
   filePath = path.join(__dirname, filePath);
 
-  const ext      = path.extname(filePath).toLowerCase();
+  const ext = path.extname(filePath).toLowerCase();
   const mimeType = MIME[ext] || 'application/octet-stream';
 
   fs.readFile(filePath, (err, data) => {
@@ -153,7 +153,7 @@ const server = http.createServer((req, res) => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function corsHeaders() {
   return {
-    'Access-Control-Allow-Origin':  '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
