@@ -369,7 +369,7 @@ btnKairos.addEventListener('click', async () => {
     }
 
     setKairosStatus('ok', `✓ ${pares.length} tramo(s) importado(s) correctamente${infoJornada}.`);
-    
+
     // Ejecutar el cálculo automáticamente tras importar los fichajes
     calcular();
   } catch (err) {
@@ -415,17 +415,45 @@ function getFormattedToday() {
   return `${year}-${month}-${day}`;
 }
 
+function getFormattedFutureDate(days = 30) {
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function areDatesConsecutive(endDateStr, startDateStr) {
+  if (!endDateStr || !startDateStr) return false;
+  const end = endDateStr.split(' ')[0];
+  const start = startDateStr.split(' ')[0];
+  if (start <= end) return true; // Se solapan o mismo día
+
+  // Comprobar si entre la fecha fin y la fecha inicio sólo hay fin de semana o días adyacentes
+  const d = new Date(end + 'T00:00:00');
+  const dTarget = new Date(start + 'T00:00:00');
+
+  d.setDate(d.getDate() + 1);
+  while (d < dTarget) {
+    const dayOfWeek = d.getDay(); // 0 = Domingo, 6 = Sábado
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      return false; // Hay un día laborable entre medias
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return true;
+}
+
 function formatFechaVuelta(dateStr) {
   if (!dateStr) return '—';
   const parts = dateStr.trim().split(' ');
   const datePart = parts[0]; // "YYYY-MM-DD"
-  const timePart = parts[1]; // "HH:MM" si existe
 
   const [y, m, d] = datePart.split('-');
   if (!y || !m || !d) return dateStr;
 
-  const formattedDate = `${d}/${m}/${y}`;
-  return timePart ? `${formattedDate} ${timePart.slice(0, 5)}` : formattedDate;
+  return `${d}/${m}/${y}`;
 }
 
 function initAusenciasModule() {
@@ -473,11 +501,12 @@ async function cargarListadoAusencias() {
 
   try {
     const today = getFormattedToday();
+    const dateEndFuture = getFormattedFutureDate(30);
 
-    // 1. Obtener datos simultáneos de los 3 endpoints
+    // 1. Obtener datos simultáneos de los 3 endpoints (consultamos ausencias con ventana futura para detectar permisos consecutivos)
     const [employeesRaw, absencesRaw, checkinsRaw] = await Promise.all([
       KairosService.getEmployees(),
-      KairosService.getAbsences({ date_start: today, date_end: today }),
+      KairosService.getAbsences({ date_start: today, date_end: dateEndFuture }),
       KairosService.getCheckins({ date_start: today, date_end: today })
     ]);
 
@@ -489,10 +518,16 @@ async function cargarListadoAusencias() {
       const name = `${emp.name || ''} ${emp.lastname || emp.last_name || ''}`.trim();
       const empNif = (emp.nif || '').trim().toUpperCase();
 
-      // Buscar ausencia registrada para hoy
-      const absence = absencesRaw.find(abs => {
-        const absNif = (abs.nif || '').trim().toUpperCase();
-        return absNif === empNif;
+      // Buscar todas las ausencias del empleado ordenadas cronológicamente
+      const empAbsences = absencesRaw
+        .filter(abs => (abs.nif || '').trim().toUpperCase() === empNif)
+        .sort((a, b) => (a.date_start || '').localeCompare(b.date_start || ''));
+
+      // Buscar si el empleado tiene una ausencia activa para hoy
+      const absenceToday = empAbsences.find(abs => {
+        const start = (abs.date_start || '').split(' ')[0];
+        const end = (abs.date_end || '').split(' ')[0];
+        return start <= today && end >= today;
       });
 
       // Buscar fichajes para hoy
@@ -522,7 +557,7 @@ async function cargarListadoAusencias() {
 
         const isEntry = action === 'entry' || action.includes('in') || action.includes('entrada');
         const isBreakExit = (action === 'exit' || action.includes('out') || action.includes('salida')) &&
-                            (type.includes('break') || type.includes('breakfast') || type.includes('lunch'));
+          (type.includes('break') || type.includes('breakfast') || type.includes('lunch'));
 
         if (isEntry || isBreakExit) {
           isWorking = true;
@@ -548,16 +583,37 @@ async function cargarListadoAusencias() {
           badgeClass = 'badge-working-office';
           badgeText = '🏢 Trabajando (Presencial)';
         }
-      } else if (absence) {
+      } else if (absenceToday) {
         estado = 'ausente';
-        const type = (absence.type || '').toUpperCase();
+        const type = (absenceToday.type || '').toUpperCase();
+        const isBaja = type === 'L' || type === 'B' || type === 'IT' || type.includes('BAJA') || type.includes('MEDIC');
 
-        if (type === 'H') {
+        if (!isBaja) {
+          // Vacaciones y permisos: el tag se mantiene como "Vacaciones"
           badgeClass = 'badge-absent-vacaciones';
           badgeText = '🏖️ Vacaciones';
-          fechaVuelta = formatFechaVuelta(absence.date_end);
+
+          // Calcular la fecha fin encadenando ausencias consecutivas (ej: vacaciones seguidas de permiso)
+          let effectiveDateEnd = absenceToday.date_end;
+          let currentEnd = (absenceToday.date_end || '').split(' ')[0];
+
+          for (const nextAbs of empAbsences) {
+            const nextStart = (nextAbs.date_start || '').split(' ')[0];
+            const nextEnd = (nextAbs.date_end || '').split(' ')[0];
+            const nextType = (nextAbs.type || '').toUpperCase();
+            const nextIsBaja = nextType === 'L' || nextType === 'B' || nextType === 'IT' || nextType.includes('BAJA');
+
+            if (nextEnd > currentEnd && !nextIsBaja) {
+              if (nextStart <= currentEnd || areDatesConsecutive(currentEnd, nextStart)) {
+                currentEnd = nextEnd;
+                effectiveDateEnd = nextAbs.date_end;
+              }
+            }
+          }
+
+          fechaVuelta = formatFechaVuelta(effectiveDateEnd);
         } else {
-          // Bajas y resto de ausencias: mostrar simplemente "Ausente" sin indicar tipo específico ni fecha fin
+          // Bajas médicas: mostrar simplemente "Ausente" sin indicar fecha fin
           badgeClass = 'badge-absent-permiso';
           badgeText = '📋 Ausente';
           fechaVuelta = '—';
