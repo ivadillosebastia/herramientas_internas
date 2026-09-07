@@ -124,5 +124,26 @@
         "dni": "03153089L",
         "codigo": "1136",
         "mensaje_extra": "Vete a que te de el sol!"
+    },
+    {
+        "nombre": "Claudia",
+        "apellido": "Garrote",
+        "dni": "44880454W",
+        "codigo": "2502",
+        "mensaje_extra": "Vete a que te de el sol!"
+    },
+    {
+        "nombre": "Fernando",
+        "apellido": "Sánchez",
+        "dni": "48580665L",
+        "codigo": "3822",
+        "mensaje_extra": "Vale ya!!!!"
+    },
+    {
+        "nombre": "Tamara",
+        "apellido": "López",
+        "dni": "31876321T",
+        "codigo": "1111",
+        "mensaje_extra": "Vete a que te de el sol!"
     }
 ] 
